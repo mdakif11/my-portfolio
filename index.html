@@ -1,238 +1,776 @@
 <!DOCTYPE html>
-<!-- updated -->
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Mohammad Akif — AR/VR Developer</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet" />
-<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Syne:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --violet:#7c3aed;--violet-light:#a78bfa;--violet-dim:#4c1d95;
+    --cyan:#06b6d4;--cyan-light:#67e8f9;
+    --bg:#030712;--bg2:#0f0f1a;--bg3:#1a1a2e;
+    --text:#f1f5f9;--muted:#94a3b8;
+  }
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);color:var(--text);
+    font-family:'Syne',sans-serif;overflow-x:hidden;cursor:none;
+  }
+
+  /* Custom cursor */
+  #cursor{
+    width:12px;height:12px;border-radius:50%;
+    background:var(--violet-light);position:fixed;
+    pointer-events:none;z-index:9999;
+    mix-blend-mode:difference;
+    transition:transform 0.15s ease;
+  }
+  #cursor-ring{
+    width:36px;height:36px;border-radius:50%;
+    border:1px solid var(--violet-light);position:fixed;
+    pointer-events:none;z-index:9998;
+    transition:all 0.25s ease;opacity:0.5;
+    transform:translate(-12px,-12px);
+  }
+
+  /* NAV */
+  nav{
+    position:fixed;top:0;left:0;right:0;z-index:100;
+    padding:1.25rem 3rem;display:flex;justify-content:space-between;align-items:center;
+    background:linear-gradient(to bottom,rgba(3,7,18,0.9),transparent);
+    backdrop-filter:blur(12px);
+  }
+  .nav-logo{
+    font-family:'Orbitron',monospace;font-size:1.1rem;
+    color:var(--violet-light);letter-spacing:0.15em;
+  }
+  .nav-links{display:flex;gap:2.5rem}
+  .nav-links a{
+    color:var(--muted);text-decoration:none;font-size:0.85rem;
+    letter-spacing:0.1em;text-transform:uppercase;
+    transition:color 0.3s;
+  }
+  .nav-links a:hover{color:var(--violet-light)}
+
+  /* CANVAS BG */
+  #bg-canvas{position:fixed;top:0;left:0;z-index:0;opacity:0.6}
+
+  /* HERO */
+  #hero{
+    position:relative;z-index:10;
+    min-height:100vh;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;text-align:center;
+    padding:0 2rem;
+  }
+  .hero-tag{
+    font-family:'Orbitron',monospace;font-size:0.7rem;letter-spacing:0.4em;
+    color:var(--cyan);text-transform:uppercase;margin-bottom:1.5rem;
+    border:1px solid var(--cyan);padding:0.4rem 1.2rem;border-radius:2rem;
+    display:inline-block;animation:fadeDown 1s ease both;
+  }
+  h1.hero-name{
+    font-family:'Orbitron',monospace;
+    font-size:clamp(3rem,10vw,8rem);
+    font-weight:900;line-height:1;margin-bottom:1.5rem;
+    animation:fadeUp 1s 0.2s ease both;
+  }
+  .hero-name .first{color:var(--text)}
+  .hero-name .last{
+    -webkit-text-stroke:2px var(--violet-light);
+    color:transparent;
+  }
+  .hero-sub{
+    max-width:560px;color:var(--muted);font-size:1.05rem;line-height:1.8;
+    animation:fadeUp 1s 0.4s ease both;margin-bottom:2.5rem;
+  }
+  .hero-btns{
+    display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;
+    animation:fadeUp 1s 0.6s ease both;
+  }
+  .btn-primary{
+    padding:0.85rem 2rem;border-radius:0.5rem;
+    background:linear-gradient(135deg,var(--violet),var(--violet-dim));
+    color:#fff;border:none;cursor:pointer;font-family:'Syne',sans-serif;
+    font-size:0.9rem;letter-spacing:0.05em;
+    transition:transform 0.2s,box-shadow 0.2s;
+    box-shadow:0 0 30px rgba(124,58,237,0.4);
+  }
+  .btn-primary:hover{transform:translateY(-2px);box-shadow:0 0 50px rgba(124,58,237,0.7)}
+  .btn-outline{
+    padding:0.85rem 2rem;border-radius:0.5rem;
+    background:transparent;color:var(--text);
+    border:1px solid rgba(255,255,255,0.2);cursor:pointer;
+    font-family:'Syne',sans-serif;font-size:0.9rem;
+    transition:all 0.2s;
+  }
+  .btn-outline:hover{border-color:var(--violet-light);color:var(--violet-light)}
+
+  /* 3D CANVAS INSIDE HERO */
+  #hero-canvas{
+    position:relative;z-index:5;
+    width:min(500px,90vw);height:min(500px,90vw);
+    margin-top:3rem;animation:fadeUp 1s 0.8s ease both;
+  }
+
+  /* SCROLL INDICATOR */
+  .scroll-hint{
+    position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);
+    display:flex;flex-direction:column;align-items:center;gap:0.5rem;
+    color:var(--muted);font-size:0.75rem;letter-spacing:0.2em;
+    text-transform:uppercase;animation:fadeUp 1s 1.2s ease both;
+  }
+  .scroll-line{
+    width:1px;height:60px;background:linear-gradient(to bottom,var(--violet-light),transparent);
+    animation:scrollPulse 2s infinite;
+  }
+
+  /* SECTIONS */
+  section{position:relative;z-index:10;padding:8rem 2rem}
+  .section-label{
+    font-family:'Orbitron',monospace;font-size:0.65rem;
+    letter-spacing:0.4em;color:var(--cyan);text-transform:uppercase;
+    margin-bottom:1rem;
+  }
+  .section-title{
+    font-family:'Orbitron',monospace;font-size:clamp(2rem,5vw,3.5rem);
+    font-weight:700;margin-bottom:4rem;
+    background:linear-gradient(to right,var(--text),var(--muted));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  .container{max-width:1100px;margin:0 auto}
+
+  /* SKILLS */
+  .skills-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.5rem}
+  .skill-card{
+    position:relative;padding:2rem;border-radius:1rem;overflow:hidden;
+    border:1px solid rgba(255,255,255,0.07);
+    background:rgba(255,255,255,0.02);
+    transition:transform 0.3s,border-color 0.3s;
+    cursor:default;
+  }
+  .skill-card::before{
+    content:'';position:absolute;inset:0;
+    background:radial-gradient(circle at 0% 0%,rgba(124,58,237,0.15),transparent 60%);
+    opacity:0;transition:opacity 0.3s;
+  }
+  .skill-card:hover{transform:translateY(-6px);border-color:rgba(124,58,237,0.4)}
+  .skill-card:hover::before{opacity:1}
+  .skill-icon{
+    width:48px;height:48px;border-radius:0.75rem;
+    display:flex;align-items:center;justify-content:center;
+    margin-bottom:1.25rem;font-size:1.5rem;
+    background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);
+  }
+  .skill-card h3{
+    font-family:'Orbitron',monospace;font-size:0.9rem;
+    color:var(--violet-light);margin-bottom:1rem;letter-spacing:0.05em;
+  }
+  .skill-tags{display:flex;flex-wrap:wrap;gap:0.5rem}
+  .tag{
+    padding:0.3rem 0.75rem;border-radius:2rem;
+    font-size:0.75rem;background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.1);color:var(--muted);
+    transition:all 0.2s;
+  }
+  .tag:hover{background:rgba(124,58,237,0.2);border-color:var(--violet-light);color:var(--text)}
+
+  /* TIMELINE */
+  .timeline{position:relative;padding-left:2rem}
+  .timeline::before{
+    content:'';position:absolute;left:0;top:0;bottom:0;
+    width:1px;background:linear-gradient(to bottom,var(--violet),transparent);
+  }
+  .timeline-item{
+    position:relative;margin-bottom:3rem;padding-left:2rem;
+  }
+  .timeline-dot{
+    position:absolute;left:-2.35rem;top:0.35rem;
+    width:14px;height:14px;border-radius:50%;
+    background:var(--violet);border:2px solid var(--bg);
+    box-shadow:0 0 20px rgba(124,58,237,0.8);
+  }
+  .timeline-date{
+    font-family:'Orbitron',monospace;font-size:0.65rem;
+    color:var(--cyan);letter-spacing:0.15em;margin-bottom:0.5rem;
+  }
+  .timeline-company{
+    font-size:0.8rem;color:var(--muted);margin-bottom:0.25rem;
+  }
+  .timeline-title{
+    font-size:1.2rem;font-weight:700;margin-bottom:0.75rem;color:var(--text);
+  }
+  .timeline-desc{
+    color:var(--muted);font-size:0.9rem;line-height:1.7;
+  }
+  .timeline-badge{
+    display:inline-block;margin-top:0.75rem;
+    padding:0.25rem 0.75rem;border-radius:2rem;font-size:0.7rem;
+    background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.3);
+    color:var(--violet-light);
+  }
+
+  /* PROJECTS */
+  .projects-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1.5rem}
+  .project-card{
+    border-radius:1rem;overflow:hidden;
+    border:1px solid rgba(255,255,255,0.07);
+    background:var(--bg2);transition:transform 0.3s;
+    position:relative;
+  }
+  .project-card:hover{transform:translateY(-8px)}
+  .project-card:hover .project-glow{opacity:1}
+  .project-glow{
+    position:absolute;top:-50%;left:-50%;
+    width:200%;height:200%;
+    background:radial-gradient(circle,rgba(124,58,237,0.12),transparent 60%);
+    opacity:0;transition:opacity 0.4s;pointer-events:none;
+  }
+  .project-visual{
+    height:180px;display:flex;align-items:center;justify-content:center;
+    position:relative;overflow:hidden;
+    background:linear-gradient(135deg,var(--bg3),var(--bg2));
+  }
+  .project-canvas-3d{width:100%;height:100%}
+  .project-body{padding:1.5rem}
+  .project-number{
+    font-family:'Orbitron',monospace;font-size:0.65rem;
+    color:var(--violet-light);letter-spacing:0.2em;margin-bottom:0.5rem;
+  }
+  .project-title{font-size:1.1rem;font-weight:700;margin-bottom:0.75rem}
+  .project-desc{color:var(--muted);font-size:0.875rem;line-height:1.6}
+
+  /* STATS */
+  .stats-row{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1.5rem;
+    margin-bottom:6rem;
+  }
+  .stat-box{
+    text-align:center;padding:2rem 1rem;border-radius:1rem;
+    background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);
+    position:relative;overflow:hidden;
+  }
+  .stat-box::before{
+    content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
+    background:linear-gradient(to right,transparent,var(--violet),transparent);
+  }
+  .stat-num{
+    font-family:'Orbitron',monospace;font-size:2.5rem;
+    font-weight:900;color:var(--violet-light);
+  }
+  .stat-label{font-size:0.8rem;color:var(--muted);margin-top:0.5rem;letter-spacing:0.05em}
+
+  /* CONTACT */
+  #contact{
+    text-align:center;
+    background:radial-gradient(ellipse at center,rgba(124,58,237,0.1),transparent 70%);
+  }
+  .contact-links{display:flex;justify-content:center;gap:1.5rem;flex-wrap:wrap;margin-top:2rem}
+  .contact-link{
+    display:flex;align-items:center;gap:0.6rem;padding:0.75rem 1.5rem;
+    border-radius:0.5rem;border:1px solid rgba(255,255,255,0.1);
+    color:var(--muted);text-decoration:none;font-size:0.875rem;
+    transition:all 0.3s;background:rgba(255,255,255,0.02);
+  }
+  .contact-link:hover{border-color:var(--violet-light);color:var(--violet-light);
+    background:rgba(124,58,237,0.1);}
+
+  /* FOOTER */
+  footer{
+    position:relative;z-index:10;text-align:center;
+    padding:2rem;color:var(--muted);font-size:0.8rem;border-top:1px solid rgba(255,255,255,0.05);
+  }
+
+  /* REVEAL ANIMATION */
+  .reveal{opacity:0;transform:translateY(40px);transition:opacity 0.8s ease,transform 0.8s ease}
+  .reveal.visible{opacity:1;transform:none}
+
+  @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:none}}
+  @keyframes fadeDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:none}}
+  @keyframes scrollPulse{0%,100%{opacity:1;transform:scaleY(1)}50%{opacity:0.3;transform:scaleY(0.6)}}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+
+  .floating{animation:float 4s ease-in-out infinite}
+
+  /* Glitch effect on name */
+  .glitch{position:relative}
+  .glitch::after{
+    content:attr(data-text);position:absolute;left:2px;top:0;
+    color:var(--cyan);opacity:0;
+    clip-path:polygon(0 0,100% 0,100% 33%,0 33%);
+  }
+  .glitch:hover::after{animation:glitchAnim 0.4s steps(2) both;opacity:0.7}
+  @keyframes glitchAnim{
+    0%{clip-path:polygon(0 0,100% 0,100% 33%,0 33%);transform:translateX(-3px)}
+    50%{clip-path:polygon(0 50%,100% 50%,100% 80%,0 80%);transform:translateX(3px)}
+    100%{clip-path:polygon(0 70%,100% 70%,100% 100%,0 100%);transform:translateX(0)}
+  }
+
+  /* Loading */
+  #loader{
+    position:fixed;inset:0;z-index:9999;background:var(--bg);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.5rem;
+    transition:opacity 0.8s ease;
+  }
+  #loader.out{opacity:0;pointer-events:none}
+  .loader-bar{width:200px;height:2px;background:rgba(255,255,255,0.1);border-radius:1rem;overflow:hidden}
+  .loader-fill{height:100%;width:0;background:linear-gradient(to right,var(--violet),var(--cyan));
+    border-radius:1rem;transition:width 0.1s}
+  .loader-text{font-family:'Orbitron',monospace;font-size:0.7rem;letter-spacing:0.3em;color:var(--muted)}
+</style>
 </head>
 <body>
-<div class="bg-grid" aria-hidden="true"></div>
+
+<div id="loader">
+  <div style="font-family:'Orbitron',monospace;font-size:0.65rem;letter-spacing:0.4em;color:var(--cyan)">INITIALIZING XR SPACE</div>
+  <div class="loader-bar"><div class="loader-fill" id="lf"></div></div>
+  <div class="loader-text" id="lt">0%</div>
+</div>
+
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<canvas id="bg-canvas"></canvas>
+
+<nav>
+  <div class="nav-logo">M.AKIF</div>
+  <div class="nav-links">
+    <a href="#about">About</a>
+    <a href="#skills">Skills</a>
+    <a href="#experience">Experience</a>
+    <a href="#projects">Projects</a>
+    <a href="#contact">Contact</a>
+  </div>
+</nav>
 
 <!-- HERO -->
-<header class="hero" id="hero">
-  <div class="hero-inner">
-    <div class="hero-eyebrow fade-el">Available for XR &amp; Immersive Tech Roles</div>
-    <h1 class="hero-name fade-el">Mohammad<br /><em>Akif</em></h1>
-    <div class="hero-title fade-el">AR / VR Developer</div>
-    <p class="hero-summary fade-el">AR/VR Developer with 2+ years of experience building immersive XR applications using Unity, AR Foundation, and EON-XR. Developed 190+ interactive learning modules and real-time simulations for education and training. Skilled in C# scripting, 3D environment design, and XR-based application development.</p>
-    <div class="hero-contacts fade-el">
-      <a href="mailto:mdakif2k19@gmail.com" class="contact-pill">✉ mdakif2k19@gmail.com</a>
-      <span class="contact-pill">📞 86372 95783</span>
-      <a href="https://www.linkedin.com/in/md-akif-15775a214/" target="_blank" rel="noreferrer" class="contact-pill">🔗 LinkedIn</a>
-      <span class="contact-pill">📍 Hyderabad, India</span>
+<section id="hero">
+  <div class="hero-tag">AR / VR Developer · Unity Specialist · XR Creator</div>
+  <h1 class="hero-name glitch" data-text="Mohammad Akif">
+    <span class="first">Mohammad</span><br>
+    <span class="last">Akif</span>
+  </h1>
+  <p class="hero-sub">
+    Building immersive XR experiences with Unity, AR Foundation & EON-XR. 
+    190+ learning modules. Real-time simulations. The future, rendered in 3D.
+  </p>
+  <div class="hero-btns">
+    <button class="btn-primary" onclick="document.getElementById('projects').scrollIntoView({behavior:'smooth'})">View Projects</button>
+    <button class="btn-outline" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">Contact Me</button>
+  </div>
+  <canvas id="hero-canvas" class="floating"></canvas>
+  <div class="scroll-hint">
+    <span>Scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section id="about" style="padding-top:2rem;padding-bottom:2rem">
+  <div class="container reveal">
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-num" id="cnt1">0</div>
+        <div class="stat-label">XR Modules Built</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" id="cnt2">0</div>
+        <div class="stat-label">3D Assets Designed</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" id="cnt3">0</div>
+        <div class="stat-label">Students Trained</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" id="cnt4">0</div>
+        <div class="stat-label">Years Experience</div>
+      </div>
     </div>
   </div>
-  <div class="stats-strip">
-    <div class="stat-item fade-el"><div class="stat-value">190+</div><div class="stat-label">XR Modules Built</div></div>
-    <div class="stat-item fade-el"><div class="stat-value">30+</div><div class="stat-label">3D Assets Designed</div></div>
-    <div class="stat-item fade-el"><div class="stat-value">100+</div><div class="stat-label">Students Trained</div></div>
-    <div class="stat-item fade-el"><div class="stat-value">2+</div><div class="stat-label">Years Experience</div></div>
-  </div>
-</header>
+</section>
 
-<main class="cv-main">
-
-  <!-- SKILLS -->
-  <section>
-    <div class="section-title fade-el"><span>Skills</span></div>
-    <div class="skills-grid">
-      <div class="skill-card skill-card--violet fade-el">
-        <div class="skill-cat">XR &amp; Game Dev</div>
+<!-- SKILLS -->
+<section id="skills">
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">// CAPABILITIES</div>
+      <div class="section-title">Core Skills</div>
+    </div>
+    <div class="skills-grid reveal">
+      <div class="skill-card">
+        <div class="skill-icon">🥽</div>
+        <h3>XR Development</h3>
         <div class="skill-tags">
-          <span class="skill-tag">Unity 3D</span>
-          <span class="skill-tag">AR Foundation</span>
-          <span class="skill-tag">EON-XR</span>
-          <span class="skill-tag">Vuforia</span>
-          <span class="skill-tag">Unreal Engine</span>
-          <span class="skill-tag">Oculus</span>
+          <span class="tag">Unity 3D</span>
+          <span class="tag">AR Foundation</span>
+          <span class="tag">EON-XR</span>
+          <span class="tag">VR Dev</span>
+          <span class="tag">Oculus</span>
+          <span class="tag">Vuforia</span>
+          <span class="tag">Unreal Engine</span>
         </div>
       </div>
-      <div class="skill-card skill-card--teal fade-el">
-        <div class="skill-cat">Programming</div>
+      <div class="skill-card">
+        <div class="skill-icon">💻</div>
+        <h3>Programming</h3>
         <div class="skill-tags">
-          <span class="skill-tag">C#</span>
-          <span class="skill-tag">Python</span>
-          <span class="skill-tag">Three.js</span>
+          <span class="tag">C#</span>
+          <span class="tag">Python</span>
+          <span class="tag">Git</span>
+          <span class="tag">Visual Studio</span>
+          <span class="tag">Scripting</span>
+          <span class="tag">UI Systems</span>
         </div>
       </div>
-      <div class="skill-card skill-card--amber fade-el">
-        <div class="skill-cat">Tools &amp; Design</div>
+      <div class="skill-card">
+        <div class="skill-icon">🎨</div>
+        <h3>3D Design</h3>
         <div class="skill-tags">
-          <span class="skill-tag">Blender</span>
-          <span class="skill-tag">Visual Studio</span>
-          <span class="skill-tag">Git</span>
-          <span class="skill-tag">Level Design</span>
-          <span class="skill-tag">UI/UX in Games</span>
-          <span class="skill-tag">3D Modelling</span>
+          <span class="tag">Blender</span>
+          <span class="tag">Asset Creation</span>
+          <span class="tag">Level Design</span>
+          <span class="tag">Env Design</span>
+          <span class="tag">Animation</span>
+          <span class="tag">UI/UX</span>
         </div>
       </div>
     </div>
-  </section>
-
-  <!-- EXPERIENCE / PROJECTS TABS -->
-  <section>
-    <div class="section-title fade-el"><span>Work &amp; Projects</span></div>
-    <div class="tabs fade-el">
-      <button class="tab active" onclick="showTab('experience', this)">Experience</button>
-      <button class="tab" onclick="showTab('projects', this)">Projects</button>
-    </div>
-
-    <div id="tab-experience" class="tab-content">
-      <!-- Exp 1 -->
-      <div class="exp-card fade-el">
-        <div class="exp-header">
-          <div>
-            <div class="exp-role">AR/VR Developer &amp; Project Executive</div>
-            <div class="exp-org">Centurion University of Technology and Management (CUTM)</div>
-          </div>
-          <div class="exp-meta">
-            <div class="exp-period">1 Year 7 Months</div>
-            <div class="exp-location">India</div>
-          </div>
-        </div>
-        <ul class="exp-points">
-          <li>Developed 190+ AR/VR immersive learning modules using Unity and EON-XR</li>
-          <li>Designed and built 30+ optimized 3D assets for XR applications</li>
-          <li>Created real-time simulations for training and educational use cases</li>
-          <li>Worked on end-to-end XR development lifecycle — design → development → deployment</li>
-          <li>Implemented C# scripting, UI systems, and animations in Unity projects</li>
-          <li>Conducted AR/VR workshops and trained 100+ students in immersive technologies</li>
-          <li>Trained students from TMRIES, Hyderabad through a 15-day AR/VR internship program</li>
-        </ul>
-      </div>
-      <!-- Exp 2 -->
-      <div class="exp-card fade-el">
-        <div class="exp-header">
-          <div>
-            <div class="exp-role">Unity Community Co-Organiser</div>
-            <div class="exp-org">Visakhapatnam CUTM Unity User Group · Unity Technologies</div>
-          </div>
-          <div class="exp-meta">
-            <div class="exp-period">Dec 2025 – Present</div>
-            <div class="exp-location">Visakhapatnam, AP</div>
-          </div>
-        </div>
-        <ul class="exp-points">
-          <li>Co-organising India's first Unity User Group community initiatives</li>
-          <li>Conducting workshops and weekly Skill Share sessions with industry experts</li>
-          <li>Led gaming competitions and esports events through industry collaborations</li>
-          <li>Coordinated MoU-based events with Krafton India (College Tour) and Uniconnect</li>
-        </ul>
-      </div>
-      <!-- Exp 3 -->
-      <div class="exp-card fade-el">
-        <div class="exp-header">
-          <div>
-            <div class="exp-role">EON XR Content Developer</div>
-            <div class="exp-org">EON Reality (in partnership with NSDC &amp; CUTM-AP)</div>
-          </div>
-          <div class="exp-meta">
-            <div class="exp-period">Mar 2025</div>
-            <div class="exp-location">India</div>
-          </div>
-        </div>
-        <ul class="exp-points">
-          <li>Developing immersive XR content aligned with India's Skill Development Mission</li>
-          <li>Creating interactive learning experiences using the EON-XR platform</li>
-          <li>Focused on AR/VR-based skill training and experiential education</li>
-        </ul>
-      </div>
-      <!-- Exp 4 -->
-      <div class="exp-card fade-el">
-        <div class="exp-header">
-          <div>
-            <div class="exp-role">Virtual Reality Development Intern</div>
-            <div class="exp-org">Centurion University of Technology and Management (CUTM)</div>
-          </div>
-          <div class="exp-meta">
-            <div class="exp-period">May 2024 – Sep 2024</div>
-            <div class="exp-location">Bhubaneswar, Odisha</div>
-          </div>
-        </div>
-        <ul class="exp-points">
-          <li>Worked on VR development using Unity, Three.js, and Oculus technologies</li>
-          <li>Assisted in building immersive environments and interactive applications</li>
-          <li>Gained hands-on experience in XR development workflows and tools</li>
-        </ul>
-      </div>
-    </div>
-
-    <div id="tab-projects" class="tab-content" style="display:none;">
-      <div class="projects-grid">
-        <div class="proj-card fade-el">
-          <div class="proj-icon">🌦</div>
-          <div class="proj-name">VR Weather Station Simulation</div>
-          <div class="proj-desc">Unity-based VR simulation of an Automatic Weather Station. Simulated temperature, humidity, wind speed, and atmospheric conditions with interactive sensor-based data visualization.</div>
-        </div>
-        <div class="proj-card fade-el">
-          <div class="proj-icon">🎓</div>
-          <div class="proj-name">VR Simulation for Education</div>
-          <div class="proj-desc">Immersive VR simulations for training and academic use, focused on real-world scenario-based interaction and environment design.</div>
-        </div>
-        <div class="proj-card fade-el">
-          <div class="proj-icon">🧊</div>
-          <div class="proj-name">3D Asset &amp; Environment Development</div>
-          <div class="proj-desc">Designed and optimized multiple 3D assets using Blender and Unity, integrated into XR applications for seamless immersive experiences.</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- EDUCATION & CERTS -->
-  <div class="two-col">
-    <section>
-      <div class="section-title fade-el"><span>Education</span></div>
-      <div class="edu-list">
-        <div class="edu-item fade-el"><div class="edu-year">2026</div><div><div class="edu-degree">Master of Computer Applications (MCA)</div><div class="edu-school">Centurion University of Technology and Management</div><div class="edu-loc">Bhubaneswar</div></div></div>
-        <div class="edu-item fade-el"><div class="edu-year">2022</div><div><div class="edu-degree">Bachelor's Degree</div><div class="edu-school">U.N (Auto) College of Science &amp; Technology</div><div class="edu-loc">Cuttack</div></div></div>
-        <div class="edu-item fade-el"><div class="edu-year">2019</div><div><div class="edu-degree">Intermediate</div><div class="edu-school">S.V.M (Auto) College</div><div class="edu-loc">Jagatsinghpur</div></div></div>
-        <div class="edu-item fade-el"><div class="edu-year">2017</div><div><div class="edu-degree">High School</div><div class="edu-school">S.K Academy</div><div class="edu-loc">Jagatsinghpur</div></div></div>
-      </div>
-    </section>
-    <section>
-      <div class="section-title fade-el"><span>Certifications</span></div>
-      <div class="cert-list">
-        <div class="cert-item fade-el"><span class="cert-dot"></span><span>Unity Education Grant License (Aug 2025 – Aug 2026)</span></div>
-        <div class="cert-item fade-el"><span class="cert-dot"></span><span>Unity Professional Development – Letter of Completion (Aug 2025)</span></div>
-        <div class="cert-item fade-el"><span class="cert-dot"></span><span>AI Masterclass by Dhruv Rathee (May 2025)</span></div>
-        <div class="cert-item fade-el"><span class="cert-dot"></span><span>Introduction to Augmented Reality and ARCore – Google (Feb 2025)</span></div>
-        <div class="cert-item fade-el"><span class="cert-dot"></span><span>Unity Professional Development FDP – 3-week intensive program</span></div>
-      </div>
-    </section>
   </div>
+</section>
 
-  <!-- ACHIEVEMENTS, LANGUAGES, LEADERSHIP -->
-  <div class="three-col">
-    <section>
-      <div class="section-title fade-el"><span>Achievements</span></div>
-      <div class="achieve-item fade-el">⭐ Appointed Co-organiser for Visakhapatnam CUTM Unity User Group by Unity Technologies (2025)</div>
-      <div class="achieve-item fade-el">⭐ Recognized for contributions to AR/VR development, training, and community engagement</div>
-      <div class="achieve-item fade-el">⭐ Member, IEEE – global professional organization for technology and engineering</div>
-    </section>
-    <section>
-      <div class="section-title fade-el"><span>Languages</span></div>
-      <div class="lang-row fade-el"><span class="lang-name">English</span><span class="lang-level">Proficient</span></div>
-      <div class="lang-row fade-el"><span class="lang-name">Hindi</span><span class="lang-level">Native</span></div>
-      <div class="lang-row fade-el"><span class="lang-name">Odia</span><span class="lang-level">Native</span></div>
-      <div class="lang-row fade-el"><span class="lang-name">Urdu</span><span class="lang-level">Native</span></div>
-    </section>
-    <section>
-      <div class="section-title fade-el"><span>Leadership · NCC</span></div>
-      <div class="leadership-box fade-el">🎖 Senior Under Officer, National Cadet Corps (NCC). Holder of NCC A, B, and C certificates (Air Force &amp; Army Wings). Managed 3 large-scale camps with 600+ participants.</div>
-    </section>
+<!-- EXPERIENCE -->
+<section id="experience">
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">// JOURNEY</div>
+      <div class="section-title">Experience</div>
+    </div>
+    <div class="timeline reveal">
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-date">DEC 2025 – PRESENT</div>
+        <div class="timeline-company">Unity Technologies · Visakhapatnam</div>
+        <div class="timeline-title">Unity Community Co-Organiser</div>
+        <div class="timeline-desc">Co-organising India's first Unity User Group. Conducting AR/VR workshops, weekly Skill Share sessions with industry experts. Coordinated MoU-based events with Krafton India and Uniconnect.</div>
+        <span class="timeline-badge">🏆 Appointed by Unity Technologies</span>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-date">MAR 2025</div>
+        <div class="timeline-company">EON Reality · NSDC & CUTM-AP Partnership</div>
+        <div class="timeline-title">EON XR Content Developer</div>
+        <div class="timeline-desc">Developing immersive XR content aligned with India's Skill Development Mission. Creating interactive learning experiences on the EON-XR platform for students and professionals nationwide.</div>
+        <span class="timeline-badge">🇮🇳 National Skill Development</span>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-date">1 YEAR 7 MONTHS</div>
+        <div class="timeline-company">Centurion University (CUTM)</div>
+        <div class="timeline-title">AR/VR Developer & Project Executive</div>
+        <div class="timeline-desc">Built 190+ AR/VR immersive learning modules. Designed 30+ optimized 3D assets. Trained 100+ students. Delivered end-to-end XR development from design to deployment.</div>
+        <span class="timeline-badge">190+ Modules Delivered</span>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-date">MAY – SEP 2024</div>
+        <div class="timeline-company">CUTM · Bhubaneswar</div>
+        <div class="timeline-title">VR Development Intern</div>
+        <div class="timeline-desc">Worked on VR development using Unity, Three.js and Oculus technologies. Built immersive environments and interactive applications with hands-on XR workflow experience.</div>
+      </div>
+    </div>
   </div>
+</section>
 
-</main>
+<!-- PROJECTS -->
+<section id="projects">
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">// PORTFOLIO</div>
+      <div class="section-title">Projects</div>
+    </div>
+    <div class="projects-grid reveal">
+      <div class="project-card">
+        <div class="project-glow"></div>
+        <div class="project-visual">
+          <canvas id="proj-canvas-1" class="project-canvas-3d"></canvas>
+        </div>
+        <div class="project-body">
+          <div class="project-number">01 / VR SIMULATION</div>
+          <div class="project-title">Automatic Weather Station VR</div>
+          <div class="project-desc">Virtual Reality simulation of an AWS using Unity. Real-time environmental parameters — temperature, humidity, wind speed — with interactive sensor-based data collection and 3D visualization.</div>
+          <div class="skill-tags" style="margin-top:1rem">
+            <span class="tag">Unity</span><span class="tag">VR</span><span class="tag">3D Models</span>
+          </div>
+        </div>
+      </div>
+      <div class="project-card">
+        <div class="project-glow"></div>
+        <div class="project-visual">
+          <canvas id="proj-canvas-2" class="project-canvas-3d"></canvas>
+        </div>
+        <div class="project-body">
+          <div class="project-number">02 / EDUCATION</div>
+          <div class="project-title">VR Simulations for Education</div>
+          <div class="project-desc">Immersive VR simulations for training and academic environments. Focused on real-world scenario-based interaction, environment design, and experiential learning at scale.</div>
+          <div class="skill-tags" style="margin-top:1rem">
+            <span class="tag">EON-XR</span><span class="tag">Training</span><span class="tag">Unity</span>
+          </div>
+        </div>
+      </div>
+      <div class="project-card">
+        <div class="project-glow"></div>
+        <div class="project-visual">
+          <canvas id="proj-canvas-3" class="project-canvas-3d"></canvas>
+        </div>
+        <div class="project-body">
+          <div class="project-number">03 / 3D ASSETS</div>
+          <div class="project-title">3D Asset & Environment Dev</div>
+          <div class="project-desc">Designed and optimized multiple 3D assets using Blender and Unity. Integrated assets into XR applications with performance-optimized pipelines for real-time rendering.</div>
+          <div class="skill-tags" style="margin-top:1rem">
+            <span class="tag">Blender</span><span class="tag">Unity</span><span class="tag">XR</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
-<footer class="cv-footer">
-  <span>Mohammad Akif · AR/VR Developer · 2026</span>
+<!-- ACHIEVEMENTS -->
+<section id="achievements">
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">// RECOGNITION</div>
+      <div class="section-title">Achievements</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem" class="reveal">
+      <div class="skill-card" style="border-color:rgba(6,182,212,0.3)">
+        <div style="font-size:2rem;margin-bottom:1rem">🏅</div>
+        <h3 style="color:var(--cyan)">Unity Co-Organiser</h3>
+        <p style="color:var(--muted);font-size:0.875rem;line-height:1.6">Appointed by Unity Technologies as Co-organiser for Visakhapatnam CUTM Unity User Group (2025)</p>
+      </div>
+      <div class="skill-card" style="border-color:rgba(124,58,237,0.3)">
+        <div style="font-size:2rem;margin-bottom:1rem">📜</div>
+        <h3>Unity Education Grant</h3>
+        <p style="color:var(--muted);font-size:0.875rem;line-height:1.6">Unity Education Grant License (Aug 2025–26) + Unity Professional Development Letter of Completion</p>
+      </div>
+      <div class="skill-card" style="border-color:rgba(6,182,212,0.3)">
+        <div style="font-size:2rem;margin-bottom:1rem">🌐</div>
+        <h3 style="color:var(--cyan)">Google AR Certified</h3>
+        <p style="color:var(--muted);font-size:0.875rem;line-height:1.6">Introduction to Augmented Reality and ARCore certified by Google (Feb 2025)</p>
+      </div>
+      <div class="skill-card" style="border-color:rgba(124,58,237,0.3)">
+        <div style="font-size:2rem;margin-bottom:1rem">✈️</div>
+        <h3>NCC Senior Under Officer</h3>
+        <p style="color:var(--muted);font-size:0.875rem;line-height:1.6">Holder of NCC 'A', 'B', 'C' Certificates (Air Force & Army). Managed camps with 600+ participants.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="container reveal">
+    <div class="section-label" style="text-align:center">// GET IN TOUCH</div>
+    <div class="section-title" style="text-align:center">Let's Build XR</div>
+    <p style="text-align:center;color:var(--muted);max-width:500px;margin:0 auto 2rem">Open for collaborations, freelance XR projects, and immersive simulation work. Let's create something extraordinary.</p>
+    <div class="contact-links">
+      <a class="contact-link" href="mailto:mdakif2k19@gmail.com">📧 mdakif2k19@gmail.com</a>
+      <a class="contact-link" href="tel:+918637295783">📞 +91 86372 95783</a>
+      <a class="contact-link" href="https://www.linkedin.com/in/md-akif-15775a214/" target="_blank">🔗 LinkedIn</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span style="font-family:'Orbitron',monospace;color:var(--violet-light)">Mohammad Akif</span> · AR/VR Developer · Built with ❤️ & Three.js
 </footer>
 
-<script src="script.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// LOADER
+let prog=0;
+const lf=document.getElementById('lf'),lt=document.getElementById('lt');
+const iv=setInterval(()=>{
+  prog+=Math.random()*15;
+  if(prog>=100){prog=100;clearInterval(iv);
+    setTimeout(()=>{document.getElementById('loader').classList.add('out')},400);}
+  lf.style.width=prog+'%';lt.textContent=Math.round(prog)+'%';
+},80);
+
+// CURSOR
+const cur=document.getElementById('cursor'),ring=document.getElementById('cursor-ring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{
+  mx=e.clientX;my=e.clientY;
+  cur.style.left=mx-6+'px';cur.style.top=my-6+'px';
+});
+setInterval(()=>{
+  rx+=(mx-rx)*0.12;ry+=(my-ry)*0.12;
+  ring.style.left=rx-18+'px';ring.style.top=ry-18+'px';
+},16);
+
+// BG PARTICLES
+const bgC=document.getElementById('bg-canvas');
+const bgCtx=bgC.getContext('2d');
+bgC.width=window.innerWidth;bgC.height=window.innerHeight;
+window.addEventListener('resize',()=>{bgC.width=window.innerWidth;bgC.height=window.innerHeight});
+
+const PARTICLES=[];
+for(let i=0;i<120;i++){
+  PARTICLES.push({
+    x:Math.random()*window.innerWidth,y:Math.random()*window.innerHeight,
+    r:Math.random()*1.5+0.3,
+    vx:(Math.random()-.5)*0.3,vy:(Math.random()-.5)*0.3,
+    alpha:Math.random()*0.6+0.1
+  });
+}
+function drawBg(){
+  bgCtx.clearRect(0,0,bgC.width,bgC.height);
+  PARTICLES.forEach(p=>{
+    p.x+=p.vx;p.y+=p.vy;
+    if(p.x<0)p.x=bgC.width;if(p.x>bgC.width)p.x=0;
+    if(p.y<0)p.y=bgC.height;if(p.y>bgC.height)p.y=0;
+    bgCtx.beginPath();
+    bgCtx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    bgCtx.fillStyle=`rgba(167,139,250,${p.alpha})`;
+    bgCtx.fill();
+  });
+  // grid lines
+  bgCtx.strokeStyle='rgba(124,58,237,0.04)';bgCtx.lineWidth=1;
+  for(let x=0;x<bgC.width;x+=80){
+    bgCtx.beginPath();bgCtx.moveTo(x,0);bgCtx.lineTo(x,bgC.height);bgCtx.stroke();
+  }
+  for(let y=0;y<bgC.height;y+=80){
+    bgCtx.beginPath();bgCtx.moveTo(0,y);bgCtx.lineTo(bgC.width,y);bgCtx.stroke();
+  }
+  requestAnimationFrame(drawBg);
+}
+drawBg();
+
+// THREE.JS HERO
+(function(){
+  const canvas=document.getElementById('hero-canvas');
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+  renderer.setPixelRatio(window.devicePixelRatio);
+  const W=canvas.clientWidth,H=canvas.clientHeight;
+  renderer.setSize(W,H,false);
+  const scene=new THREE.Scene();
+  const cam=new THREE.PerspectiveCamera(60,W/H,0.1,100);
+  cam.position.set(0,0,4);
+
+  // Torus Knot — glowing
+  const geo=new THREE.TorusKnotGeometry(1.2,0.35,256,32);
+  const mat=new THREE.MeshStandardMaterial({
+    color:0x7c3aed,metalness:0.8,roughness:0.15,
+    emissive:0x4c1d95,emissiveIntensity:0.6
+  });
+  const knot=new THREE.Mesh(geo,mat);
+  scene.add(knot);
+
+  // Wireframe overlay
+  const wGeo=new THREE.TorusKnotGeometry(1.25,0.35,128,32);
+  const wMat=new THREE.MeshBasicMaterial({color:0xa78bfa,wireframe:true,transparent:true,opacity:0.15});
+  const wire=new THREE.Mesh(wGeo,wMat);
+  scene.add(wire);
+
+  // Orbit ring
+  const ringGeo=new THREE.TorusGeometry(2,0.02,16,100);
+  const ringMat=new THREE.MeshBasicMaterial({color:0x06b6d4,transparent:true,opacity:0.4});
+  const orb=new THREE.Mesh(ringGeo,ringMat);
+  orb.rotation.x=Math.PI/2.5;
+  scene.add(orb);
+
+  // Particles
+  const pts=[];
+  for(let i=0;i<300;i++){
+    const a=Math.random()*Math.PI*2,b=Math.random()*Math.PI*2;
+    const r=2.5+Math.random()*1.5;
+    pts.push(r*Math.sin(a)*Math.cos(b),r*Math.sin(a)*Math.sin(b),r*Math.cos(a));
+  }
+  const pGeo=new THREE.BufferGeometry();
+  pGeo.setAttribute('position',new THREE.Float32BufferAttribute(pts,3));
+  const pMat=new THREE.PointsMaterial({color:0xa78bfa,size:0.04,transparent:true,opacity:0.8});
+  scene.add(new THREE.Points(pGeo,pMat));
+
+  // Lights
+  scene.add(new THREE.AmbientLight(0xffffff,0.5));
+  const dl=new THREE.DirectionalLight(0xa78bfa,2);dl.position.set(3,3,3);scene.add(dl);
+  const pl=new THREE.PointLight(0x06b6d4,2,10);pl.position.set(-3,-2,2);scene.add(pl);
+
+  // Mouse influence
+  let tx=0,ty=0;
+  document.addEventListener('mousemove',e=>{
+    tx=(e.clientX/window.innerWidth-.5)*0.8;
+    ty=(e.clientY/window.innerHeight-.5)*0.8;
+  });
+  let rx2=0,ry2=0;
+
+  function anim(t){
+    requestAnimationFrame(anim);
+    rx2+=(ty-rx2)*0.05;ry2+=(tx-ry2)*0.05;
+    knot.rotation.x=t*0.0003+rx2;
+    knot.rotation.y=t*0.0005+ry2;
+    wire.rotation.x=knot.rotation.x;wire.rotation.y=knot.rotation.y;
+    orb.rotation.z=t*0.0002;
+    renderer.render(scene,cam);
+  }
+  requestAnimationFrame(anim);
+})();
+
+// PROJECT MINI 3D SCENES
+function makeProjectScene(id,shape,color1,color2){
+  const canvas=document.getElementById(id);
+  if(!canvas)return;
+  const r=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+  r.setPixelRatio(window.devicePixelRatio);
+  r.setSize(canvas.parentElement.clientWidth,180,false);
+  const sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(60,canvas.parentElement.clientWidth/180,0.1,50);
+  cam.position.z=3;
+  let geo;
+  if(shape==='sphere')geo=new THREE.IcosahedronGeometry(1,4);
+  else if(shape==='box')geo=new THREE.BoxGeometry(1.5,1.5,1.5);
+  else geo=new THREE.OctahedronGeometry(1.2,0);
+  const m=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({color:color1,metalness:0.7,roughness:0.2,emissive:color2,emissiveIntensity:0.5,wireframe:shape==='box'}));
+  sc.add(m);
+  sc.add(new THREE.AmbientLight(0xffffff,0.4));
+  const l=new THREE.DirectionalLight(color1,3);l.position.set(2,2,2);sc.add(l);
+  function a(t){requestAnimationFrame(a);m.rotation.x=t*.0004;m.rotation.y=t*.0006;r.render(sc,cam);}
+  requestAnimationFrame(a);
+}
+setTimeout(()=>{
+  makeProjectScene('proj-canvas-1','sphere',0x06b6d4,0x0c4a6e);
+  makeProjectScene('proj-canvas-2','octahedron',0x7c3aed,0x2e1065);
+  makeProjectScene('proj-canvas-3','box',0xa78bfa,0x4c1d95);
+},500);
+
+// SCROLL REVEAL
+const reveals=document.querySelectorAll('.reveal');
+const obs=new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){e.target.classList.add('visible');}
+  });
+},{threshold:0.1});
+reveals.forEach(r=>obs.observe(r));
+
+// COUNT-UP
+function countUp(el,end,duration=2000,suffix=''){
+  let start=0,step=end/((duration/16));
+  const iv=setInterval(()=>{
+    start+=step;if(start>=end){start=end;clearInterval(iv);}
+    el.textContent=Math.round(start)+(suffix||'');
+  },16);
+}
+const statsObs=new IntersectionObserver(entries=>{
+  if(entries[0].isIntersecting){
+    statsObs.disconnect();
+    countUp(document.getElementById('cnt1'),190,1800,'+');
+    countUp(document.getElementById('cnt2'),30,1500,'+');
+    countUp(document.getElementById('cnt3'),100,2000,'+');
+    countUp(document.getElementById('cnt4'),2,1200,'+');
+  }
+},{threshold:0.3});
+statsObs.observe(document.querySelector('.stats-row'));
+</script>
 </body>
 </html>
